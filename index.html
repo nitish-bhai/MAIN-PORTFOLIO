@@ -1,0 +1,1637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ANDROMEADA | Universe of Stories</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@300;400;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Firebase SDKs (Compat version) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
+    <!-- Tailwind Config -->
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              paper: '#F5F5F7', 
+              ink: '#1D1D1F',
+            },
+            fontFamily: {
+              sans: ['Montserrat', 'sans-serif'],
+              marvel: ['"Bebas Neue"', 'sans-serif'],
+            },
+            animation: {
+              'fade-up': 'fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+              'fade-in': 'fadeIn 0.2s ease-out forwards',
+              'scroll': 'scroll 30s linear infinite',
+              'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            },
+            keyframes: {
+              fadeUp: {
+                '0%': { opacity: '0', transform: 'translateY(20px)' },
+                '100%': { opacity: '1', transform: 'translateY(0)' },
+              },
+              fadeIn: {
+                '0%': { opacity: '0', transform: 'scale(0.95)' },
+                '100%': { opacity: '1', transform: 'scale(1)' },
+              },
+              scroll: {
+                '0%': { transform: 'translateX(0)' },
+                '100%': { transform: 'translateX(-100%)' },
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      body {
+        background-color: #FFFFFF;
+        color: #1D1D1F;
+        overflow-x: hidden;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+      }
+      .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+      }
+      ::selection {
+        background: var(--primary-color, #EC1D24);
+        color: #FFFFFF;
+      }
+      
+      /* Admin Modal Styles */
+      .admin-input {
+          width: 100%;
+          padding: 0.75rem 1rem;
+          border: 1px solid #E5E7EB;
+          border-radius: 0.5rem;
+          font-size: 0.875rem;
+          color: #111827;
+          background: #F9FAFB;
+          transition: all 0.2s;
+          display: block;
+          margin-bottom: 0.5rem;
+      }
+      .admin-input:focus {
+          outline: none;
+          border-color: #000;
+          background: #FFF;
+          box-shadow: 0 0 0 4px rgba(0,0,0,0.05);
+      }
+      
+      .brand-track {
+        display: flex;
+        width: 200%;
+        animation: scroll 30s linear infinite;
+      }
+      
+      /* Dynamic Font Classes */
+      .font-dynamic-marvel { font-family: "Bebas Neue", sans-serif; }
+      .font-dynamic-sans { font-family: "Montserrat", sans-serif; }
+
+      /* Loader */
+      #global-loader {
+        position: fixed;
+        inset: 0;
+        background: black;
+        z-index: 9999;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: white;
+        transition: opacity 0.5s ease;
+      }
+
+      /* Dropdown Animation & Styling */
+      .dropdown-menu {
+          transform-origin: top right;
+          transition: all 0.2s ease-out;
+      }
+      .dropdown-menu.hidden {
+          opacity: 0;
+          transform: scale(0.95);
+          pointer-events: none;
+      }
+      .dropdown-menu:not(.hidden) {
+          opacity: 1;
+          transform: scale(1);
+          pointer-events: auto;
+      }
+
+      /* SVG Logo Styling */
+      #nav-logo-svg svg, #footer-logo-svg svg {
+          height: 100%;
+          width: auto;
+          display: block;
+      }
+      #footer-logo-svg svg {
+          fill: currentColor; /* Allows coloring via text-color class */
+      }
+    </style>
+</head>
+<body class="font-sans">
+
+    <!-- GLOBAL LOADER -->
+    <div id="global-loader">
+        <div class="text-center">
+            <i data-lucide="loader-2" class="w-12 h-12 animate-spin mx-auto mb-4 text-red-600"></i>
+            <h2 class="font-marvel text-2xl tracking-widest">LOADING UNIVERSE...</h2>
+        </div>
+    </div>
+
+    <!-- SYSTEM ALERT BANNER -->
+    <div id="system-alert" class="hidden fixed top-0 w-full bg-red-600 text-white z-[100] p-3 text-center text-xs font-bold uppercase tracking-widest flex items-center justify-between px-6">
+        <span id="system-alert-msg">⚠ SYSTEM ERROR: DATABASE CONNECTION FAILED</span>
+        <a id="system-alert-link" href="#" target="_blank" class="bg-white text-red-600 px-3 py-1 rounded hover:bg-gray-100">FIX NOW</a>
+    </div>
+
+    <!-- NAVIGATION -->
+    <nav id="navbar" class="fixed top-0 w-full z-50 transition-all duration-500 bg-transparent">
+        <div class="max-w-[1400px] mx-auto px-6 h-20 flex justify-between items-center">
+            <!-- Logo -->
+            <div class="cursor-pointer z-50 select-none hover:opacity-80 transition-opacity" onclick="scrollToSection('hero')">
+                <!-- SVG Logo Container -->
+                <div id="nav-logo-svg" class="h-10 md:h-12 flex items-center hidden"></div>
+                <!-- Image Logo Fallback -->
+                <img id="nav-logo" src="" alt="Logo" class="h-10 md:h-12 w-auto object-contain hidden" onerror="this.style.display='none'; document.getElementById('nav-logo-text').classList.remove('hidden');" />
+                <!-- Text Logo Fallback -->
+                <span id="nav-logo-text" class="font-black text-2xl hidden"></span>
+            </div>
+
+            <div class="flex items-center gap-8">
+                <!-- Desktop Links -->
+                <div class="hidden md:flex items-center gap-8 text-sm font-bold uppercase tracking-wider text-black">
+                    <button onclick="scrollToSection('works')" class="hover:text-red-600 transition-colors">Works</button>
+                    <button onclick="scrollToSection('stats')" class="hover:text-red-600 transition-colors">Impact</button>
+                </div>
+
+                <!-- Auth / User Menu -->
+                <div id="auth-section" class="relative z-50">
+                    <!-- Logged Out State -->
+                    <button id="nav-login-btn" onclick="openAuthModal()" class="hidden md:flex items-center gap-2 bg-black text-white px-5 py-2 rounded-full text-xs font-bold uppercase tracking-widest hover:bg-gray-800 transition-colors">
+                        <i data-lucide="user" class="w-4 h-4"></i> Login
+                    </button>
+
+                    <!-- Logged In State (Profile Button) -->
+                    <button id="nav-user-profile" onclick="toggleUserDropdown()" class="hidden flex items-center gap-3 cursor-pointer py-1 pl-1 pr-3 rounded-full bg-white/80 backdrop-blur border border-gray-200 hover:border-black transition-all group">
+                        <img id="user-avatar" src="" class="w-8 h-8 rounded-full bg-gray-200 object-cover" alt="User" />
+                        <span id="user-name" class="font-bold text-xs uppercase tracking-wide hidden md:block group-hover:text-red-600 transition-colors">User</span>
+                        <i data-lucide="chevron-down" class="w-3 h-3 text-gray-500 group-hover:text-black"></i>
+                    </button>
+
+                    <!-- Professional Dropdown Menu -->
+                    <div id="user-dropdown" class="dropdown-menu hidden absolute right-0 top-[120%] w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden ring-1 ring-black/5">
+                        <!-- Header -->
+                        <div class="p-6 bg-gray-50 border-b border-gray-100">
+                             <div class="flex items-center gap-4">
+                                <img id="dropdown-avatar" src="" class="w-12 h-12 rounded-full bg-gray-200 object-cover border-2 border-white shadow-sm" />
+                                <div class="overflow-hidden">
+                                    <h4 id="dropdown-name" class="font-bold text-sm text-black truncate">User Name</h4>
+                                    <p id="dropdown-email" class="text-xs text-gray-500 font-medium truncate">user@example.com</p>
+                                </div>
+                             </div>
+                        </div>
+                        
+                        <!-- Menu Items -->
+                        <div class="p-2 space-y-1">
+                            <button id="dropdown-admin-btn" onclick="openAdmin(); toggleUserDropdown()" class="hidden w-full text-left px-4 py-3 text-xs font-bold uppercase hover:bg-gray-50 rounded-xl flex items-center gap-3 text-red-600 transition-colors">
+                                <div class="p-1.5 bg-red-100 rounded-lg"><i data-lucide="shield" class="w-4 h-4"></i></div>
+                                Admin Dashboard
+                            </button>
+                            
+                            <button onclick="logoutUser()" class="w-full text-left px-4 py-3 text-xs font-bold uppercase hover:bg-gray-50 rounded-xl flex items-center gap-3 text-gray-700 hover:text-black transition-colors">
+                                <div class="p-1.5 bg-gray-100 rounded-lg"><i data-lucide="log-out" class="w-4 h-4"></i></div>
+                                Sign Out
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mobile Toggle -->
+                <button class="md:hidden z-50 text-black" onclick="toggleMobileMenu()">
+                    <i data-lucide="menu" id="menu-icon"></i>
+                    <i data-lucide="x" id="close-icon" class="hidden"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Menu Overlay -->
+        <div id="mobile-menu" class="fixed inset-0 bg-white z-40 flex flex-col items-center justify-center gap-8 transition-opacity duration-300 opacity-0 pointer-events-none">
+            <button onclick="scrollToSection('works'); toggleMobileMenu()" class="text-4xl font-marvel uppercase">Works</button>
+            <button onclick="scrollToSection('stats'); toggleMobileMenu()" class="text-4xl font-marvel uppercase">Impact</button>
+            <button id="mobile-login-btn" onclick="openAuthModal(); toggleMobileMenu()" class="text-2xl font-bold uppercase text-red-600">Login / Signup</button>
+        </div>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <main onclick="closeDropdownIfOutside(event)">
+        <!-- HERO SECTION -->
+        <section id="hero" class="relative h-screen overflow-hidden flex items-center justify-center bg-black">
+            <!-- Video Background -->
+            <video id="hero-video" class="absolute inset-0 z-0 w-full h-full object-cover opacity-80" autoplay muted loop playsinline>
+                <source id="hero-video-source" src="" type="video/mp4">
+            </video>
+            
+            <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent z-0"></div>
+
+            <div class="relative z-10 text-center max-w-5xl px-6 animate-fade-up">
+                <div id="est-badge" class="inline-block px-4 py-1 mb-6 text-sm font-bold tracking-widest uppercase text-white border border-white/30 backdrop-blur-md">
+                    EST. 2024
+                </div>
+
+                <h1 id="hero-heading" class="font-bold tracking-tighter text-white leading-[0.9] drop-shadow-2xl uppercase text-6xl md:text-8xl" style="text-shadow: 0 10px 30px rgba(0,0,0,0.5)">
+                    LEGENDS NEVER DIE
+                </h1>
+                
+                <p id="hero-subheading" class="text-xl md:text-2xl font-medium text-gray-300 max-w-2xl mx-auto leading-relaxed mt-6 font-sans">
+                    Explore the multiverse of graphic storytelling.
+                </p>
+                
+                <div class="pt-10">
+                    <button id="hero-cta" onclick="scrollToSection('works')" class="text-white px-10 py-5 font-black text-lg uppercase tracking-wider hover:scale-105 transition-transform duration-300 shadow-2xl skew-x-[-10deg]">
+                        <span class="skew-x-[10deg] inline-block">ENTER THE UNIVERSE</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="absolute bottom-10 left-1/2 -translate-x-1/2 animate-bounce cursor-pointer z-10 text-white opacity-70 hover:opacity-100 transition-opacity" onclick="scrollToSection('stats')">
+                <i data-lucide="arrow-down" class="w-10 h-10"></i>
+            </div>
+        </section>
+
+        <!-- BRAND TICKER -->
+        <div class="w-full bg-black text-white py-6 overflow-hidden border-y border-white/10 relative z-20">
+            <div id="brand-ticker" class="brand-track">
+                <!-- Brands injected by JS -->
+            </div>
+        </div>
+
+        <!-- STATS SECTION -->
+        <section id="stats" class="py-32 px-6 bg-paper border-b border-black/5">
+            <div class="max-w-[1400px] mx-auto">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-12 text-center divide-y md:divide-y-0 md:divide-x divide-gray-200">
+                    
+                    <div class="space-y-2 py-8 md:py-0 group">
+                        <div id="stat-sold" class="count-up text-6xl md:text-8xl font-marvel font-bold tracking-tight text-ink group-hover:scale-110 transition-transform duration-500 ease-out" data-target="0">0</div>
+                        <div class="stat-label text-sm font-bold tracking-[0.2em] uppercase">Issues Sold</div>
+                    </div>
+
+                    <div class="space-y-2 py-8 md:py-0 group">
+                        <div id="stat-pages" class="count-up text-6xl md:text-8xl font-marvel font-bold tracking-tight text-ink group-hover:scale-110 transition-transform duration-500 ease-out" data-target="0" data-suffix="+">0</div>
+                        <div class="stat-label text-sm font-bold tracking-[0.2em] uppercase">Pages Turned</div>
+                    </div>
+
+                    <div class="space-y-2 py-8 md:py-0 group">
+                        <div id="stat-users" class="count-up text-6xl md:text-8xl font-marvel font-bold tracking-tight text-ink group-hover:scale-110 transition-transform duration-500 ease-out" data-target="0">0</div>
+                        <div class="stat-label text-sm font-bold tracking-[0.2em] uppercase">True Believers</div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- WORKS GRID -->
+        <section id="works" class="py-32 px-6 bg-white">
+            <div class="max-w-[1400px] mx-auto space-y-20">
+                <div class="flex flex-col md:flex-row justify-between items-end border-b-4 border-black pb-6">
+                    <h2 class="text-5xl md:text-7xl font-marvel font-bold uppercase tracking-tight">
+                        Current Issue<span class="text-primary-color">s</span>
+                    </h2>
+                    <a href="#" class="hidden md:flex items-center gap-2 text-base font-bold hover:text-gray-600 transition-colors uppercase tracking-widest mb-2">
+                        View Full Catalog <i data-lucide="arrow-right"></i>
+                    </a>
+                </div>
+
+                <div id="products-grid" class="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-16">
+                    <!-- Products injected by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA SECTION -->
+        <section class="py-24 bg-ink text-white overflow-hidden relative">
+            <div class="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-white/5 rounded-full blur-3xl"></div>
+            <div class="absolute bottom-0 left-0 -ml-20 -mb-20 w-96 h-96 bg-red-600/20 rounded-full blur-3xl"></div>
+            
+            <div class="max-w-4xl mx-auto text-center relative z-10 px-6">
+                <h2 class="text-5xl md:text-8xl font-marvel font-bold uppercase mb-8">Join the Resistance</h2>
+                <p class="text-gray-400 text-lg md:text-xl mb-10 max-w-2xl mx-auto">
+                    Get exclusive access to limited drops, artist signings, and secret variant covers.
+                </p>
+                <div class="flex flex-col md:flex-row gap-4 justify-center max-w-lg mx-auto">
+                    <input type="email" placeholder="ENTER YOUR EMAIL" class="bg-white/10 border border-white/20 px-6 py-4 text-white placeholder:text-gray-500 font-bold uppercase tracking-wider outline-none focus:border-white transition-colors w-full" />
+                    <button id="subscribe-btn" class="px-8 py-4 font-black uppercase tracking-wider hover:bg-white hover:text-black transition-all duration-300 whitespace-nowrap bg-red-600">
+                        Subscribe
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer class="bg-black text-white pt-20 pb-10 px-6 border-t border-white/10">
+            <div class="max-w-[1400px] mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 mb-20">
+                <div class="col-span-1 md:col-span-2 space-y-8">
+                    <div class="cursor-pointer" onclick="scrollToSection('hero')">
+                        <!-- SVG Footer Logo -->
+                        <div id="footer-logo-svg" class="h-16 w-auto hidden flex items-center text-white"></div>
+                        <!-- Image Footer Logo -->
+                        <img id="footer-logo" src="" alt="Logo" class="h-16 w-auto object-contain brightness-0 invert hidden" onerror="this.style.display='none'; document.getElementById('footer-logo-text').classList.remove('hidden');" />
+                        <!-- Text Footer Logo -->
+                        <div id="footer-logo-text" class="font-marvel text-6xl tracking-wide text-white hidden"></div>
+                    </div>
+                    <p class="text-gray-500 text-lg max-w-md font-medium">
+                        The galaxy's premier destination for visual storytelling. We curate the boldest, the rarest, and the most visionary works in the medium.
+                    </p>
+                </div>
+                
+                <div>
+                    <h4 class="font-bold text-sm tracking-widest uppercase mb-8 text-gray-500">Collections</h4>
+                    <ul class="space-y-4 text-sm font-bold uppercase tracking-wider text-gray-300">
+                        <li class="hover:text-white cursor-pointer transition-colors hover:translate-x-2 duration-300 flex items-center gap-2">New Arrivals</li>
+                        <li class="hover:text-white cursor-pointer transition-colors hover:translate-x-2 duration-300 flex items-center gap-2">Limited Editions</li>
+                        <li class="hover:text-white cursor-pointer transition-colors hover:translate-x-2 duration-300 flex items-center gap-2">Omnibus</li>
+                        <li class="hover:text-white cursor-pointer transition-colors hover:translate-x-2 duration-300 flex items-center gap-2">Merchandise</li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-sm tracking-widest uppercase mb-8 text-gray-500">Connect</h4>
+                    <div id="social-links-container" class="flex gap-4 flex-wrap">
+                       <!-- Socials injected by JS -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="max-w-[1400px] mx-auto pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center text-xs text-gray-600 font-bold uppercase tracking-widest">
+                <div id="copyright-text">&copy; 2024 ANDROMEADA INC.</div>
+                <div class="flex gap-8 mt-4 md:mt-0 items-center">
+                    <span>Design by Sarthak</span>
+                    <button onclick="openAdmin()" class="hover:text-white transition-colors cursor-pointer flex items-center gap-2">
+                        <i data-lucide="lock" class="w-3 h-3"></i> Admin
+                    </button>
+                </div>
+            </div>
+        </footer>
+    </main>
+
+    <!-- AUTH MODAL -->
+    <div id="auth-modal" class="fixed inset-0 z-[110] flex items-center justify-center p-4 hidden">
+        <div class="absolute inset-0 bg-black/90 backdrop-blur-sm" onclick="closeAuthModal()"></div>
+        <div class="relative bg-white w-full max-w-md rounded-2xl overflow-hidden shadow-2xl animate-fade-up">
+            <div class="p-8">
+                <div class="text-center mb-6">
+                    <h2 id="auth-modal-title" class="text-3xl font-marvel tracking-wide uppercase">Member Access</h2>
+                    <p class="text-gray-500 text-sm font-medium">Join the universe to collect artifacts.</p>
+                </div>
+
+                <div class="space-y-4">
+                    <button onclick="handleGoogleLogin()" class="w-full flex items-center justify-center gap-3 bg-white border-2 border-gray-200 hover:bg-gray-50 hover:border-black text-black font-bold py-3 rounded-xl transition-all">
+                        <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5" alt="Google">
+                        <span>Continue with Google</span>
+                    </button>
+
+                    <div class="relative flex items-center py-2">
+                        <div class="flex-grow border-t border-gray-200"></div>
+                        <span class="flex-shrink-0 mx-4 text-gray-400 text-xs font-bold uppercase">Or Email</span>
+                        <div class="flex-grow border-t border-gray-200"></div>
+                    </div>
+
+                    <form id="email-auth-form" onsubmit="handleEmailAuth(event)" class="space-y-3">
+                        <!-- Full Name Input (Only for Register) -->
+                        <input type="text" id="auth-name" placeholder="FULL NAME" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl font-bold text-sm focus:bg-white focus:border-black outline-none transition-colors hidden" />
+                        
+                        <input type="email" id="auth-email" placeholder="EMAIL ADDRESS" required class="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl font-bold text-sm focus:bg-white focus:border-black outline-none transition-colors" />
+                        <input type="password" id="auth-password" placeholder="PASSWORD" required class="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl font-bold text-sm focus:bg-white focus:border-black outline-none transition-colors" />
+                        
+                        <button type="submit" id="auth-submit-btn" class="w-full bg-black text-white py-4 rounded-xl font-black uppercase tracking-wider hover:bg-red-600 transition-colors shadow-xl">
+                            Sign In
+                        </button>
+                        
+                        <p id="auth-error" class="text-red-500 text-xs font-bold text-center hidden"></p>
+                    </form>
+
+                    <!-- Toggle Mode Link -->
+                    <div class="text-center mt-4">
+                        <p class="text-xs text-gray-500 font-bold uppercase cursor-pointer hover:text-black transition-colors" onclick="toggleAuthMode()" id="auth-mode-toggle">
+                            New here? <span class="underline">Create an Account</span>
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+            <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-gray-400 hover:text-black">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- PRODUCT DETAILS MODAL -->
+    <div id="product-modal" class="fixed inset-0 z-[60] flex items-center justify-center p-4 hidden">
+        <div class="absolute inset-0 bg-black/90 backdrop-blur-md" onclick="closeProductModal()"></div>
+        <div class="relative bg-white w-full max-w-4xl overflow-hidden shadow-2xl animate-fade-up grid grid-cols-1 md:grid-cols-2">
+            <button onclick="closeProductModal()" class="absolute top-4 right-4 z-10 bg-white/10 hover:bg-black hover:text-white p-2 rounded-full transition-colors">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+            
+            <!-- Image Side -->
+            <div class="h-64 md:h-full bg-gray-100 relative">
+                <img id="modal-image" src="" alt="" class="w-full h-full object-cover" />
+                <div id="modal-price" class="absolute bottom-0 left-0 bg-black text-white px-6 py-3 font-bold text-xl uppercase tracking-widest">
+                    $0.00
+                </div>
+            </div>
+
+            <!-- Content Side -->
+            <div class="p-8 md:p-12 flex flex-col justify-center bg-white relative">
+                <div id="modal-category" class="text-xs font-bold text-gray-400 tracking-[0.2em] uppercase mb-2">Category</div>
+                <h3 id="modal-title" class="text-5xl md:text-6xl uppercase leading-[0.9] mb-6 text-black font-marvel">Title</h3>
+                <p id="modal-desc" class="text-gray-600 leading-relaxed font-medium mb-10">Description</p>
+
+                <div class="space-y-4">
+                    <!-- Auth Protected Buttons -->
+                    <div id="modal-actions-authenticated" class="space-y-4 hidden">
+                        <a id="modal-amazon" href="#" target="_blank" class="flex items-center justify-between w-full p-5 bg-[#FF9900] hover:bg-[#ffad33] text-black font-black uppercase tracking-wider transition-transform hover:scale-[1.02] active:scale-95 shadow-lg group hidden">
+                            <span class="flex items-center gap-3"><i data-lucide="shopping-cart" class="w-5 h-5"></i> Get on Amazon</span>
+                            <i data-lucide="external-link" class="w-5 h-5 opacity-50 group-hover:opacity-100"></i>
+                        </a>
+                        <a id="modal-notion" href="#" target="_blank" class="flex items-center justify-between w-full p-5 bg-black hover:bg-gray-800 text-white font-black uppercase tracking-wider transition-transform hover:scale-[1.02] active:scale-95 shadow-lg group hidden">
+                            <span class="flex items-center gap-3"><i data-lucide="book" class="w-5 h-5"></i> Get on Notion</span>
+                            <i data-lucide="external-link" class="w-5 h-5 opacity-50 group-hover:opacity-100"></i>
+                        </a>
+                        <div id="modal-unavailable" class="text-center py-4 bg-gray-100 font-bold uppercase text-gray-400 hidden">
+                            Links currently unavailable
+                        </div>
+                    </div>
+
+                    <!-- Guest Fallback -->
+                    <div id="modal-actions-guest" class="hidden">
+                        <button onclick="closeProductModal(); openAuthModal()" class="w-full p-5 bg-red-600 hover:bg-red-700 text-white font-black uppercase tracking-wider transition-transform hover:scale-[1.02] active:scale-95 shadow-lg flex items-center justify-center gap-2">
+                            <i data-lucide="lock" class="w-5 h-5"></i> Login to Purchase
+                        </button>
+                        <p class="text-center text-xs text-gray-400 mt-2 font-bold uppercase">Member Exclusive Access</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADMIN PANEL MODAL -->
+    <div id="admin-modal" class="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex justify-end hidden">
+        <div class="w-full max-w-lg bg-white h-full shadow-2xl overflow-y-auto flex flex-col">
+            
+            <!-- Header -->
+            <div class="p-6 bg-black text-white flex justify-between items-center sticky top-0 z-10 shrink-0">
+                <div class="flex flex-col">
+                    <h2 class="font-marvel text-2xl tracking-wider">ADMIN CONTROL</h2>
+                    <span class="text-xs text-gray-400">ANDROMEADA SYSTEM (RTDB)</span>
+                </div>
+                <button onclick="closeAdmin()" class="hover:rotate-90 transition-transform duration-300"><i data-lucide="x"></i></button>
+            </div>
+
+            <!-- Login View -->
+            <div id="admin-login-view" class="p-10 flex flex-col gap-6 items-center justify-center flex-1">
+                <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center">
+                    <i data-lucide="shield-check" class="w-8 h-8 text-gray-400"></i>
+                </div>
+                <div class="text-center">
+                    <h3 class="text-2xl font-black text-black mb-2 uppercase">Secure Login</h3>
+                    <p class="text-gray-500 text-sm">Access the mainframe with your credentials.</p>
+                </div>
+                <div class="w-full max-w-xs space-y-4">
+                    <input type="email" id="admin-email" placeholder="EMAIL" class="w-full p-4 border-2 border-gray-200 rounded-lg text-center font-bold focus:border-black outline-none transition-colors" />
+                    <input type="password" id="admin-passkey" placeholder="PASSWORD" class="w-full p-4 border-2 border-gray-200 rounded-lg text-center font-bold tracking-widest focus:border-black outline-none transition-colors" />
+                    <button id="login-btn" onclick="checkAdminLogin()" class="w-full bg-red-600 text-white py-4 rounded-lg font-black uppercase tracking-wider hover:bg-red-700 transition-colors shadow-lg shadow-red-600/20">
+                        Unlock System
+                    </button>
+                    <p id="login-error" class="text-red-500 text-xs font-bold text-center hidden"></p>
+                </div>
+            </div>
+
+            <!-- Dashboard View -->
+            <div id="admin-dashboard-view" class="hidden flex-1 flex flex-col min-h-0">
+                <!-- Tabs -->
+                <div class="flex gap-2 overflow-x-auto p-4 border-b border-gray-100 shrink-0 scrollbar-hide">
+                    <button onclick="switchAdminTab('general')" class="admin-tab-btn px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-all bg-black text-white shadow-lg" data-tab="general">General</button>
+                    <button onclick="switchAdminTab('hero')" class="admin-tab-btn px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-all bg-gray-100 text-gray-500 hover:bg-gray-200" data-tab="hero">Hero</button>
+                    <button onclick="switchAdminTab('stats')" class="admin-tab-btn px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-all bg-gray-100 text-gray-500 hover:bg-gray-200" data-tab="stats">Stats</button>
+                    <button onclick="switchAdminTab('socials')" class="admin-tab-btn px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-all bg-gray-100 text-gray-500 hover:bg-gray-200" data-tab="socials">Socials</button>
+                    <button onclick="switchAdminTab('products')" class="admin-tab-btn px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-all bg-gray-100 text-gray-500 hover:bg-gray-200" data-tab="products">Products</button>
+                </div>
+
+                <!-- Content Area -->
+                <div class="p-6 space-y-8 overflow-y-auto flex-1" id="admin-content-area">
+                    <!-- Injected via JS based on tab -->
+                </div>
+                
+                <!-- Footer Actions -->
+                <div class="p-6 bg-gray-50 border-t border-gray-100 shrink-0 space-y-3">
+                    <button onclick="saveAndCloseAdmin()" class="w-full bg-black text-white py-4 rounded-lg font-black uppercase tracking-wider hover:scale-[1.02] active:scale-95 transition-all shadow-xl flex items-center justify-center gap-2">
+                         <span id="save-text">Save Changes to Database</span>
+                    </button>
+                    <button onclick="logoutAdmin()" class="w-full text-xs font-bold text-gray-400 hover:text-red-500 uppercase">
+                        Sign Out
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- FIREBASE CONFIGURATION ---
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+          apiKey: "AIzaSyCYGVqAfNpARxlw6QXBVg9539OuDq4mq0s",
+          authDomain: "my-portfolio-36dec.firebaseapp.com",
+          databaseURL: "https://my-portfolio-36dec-default-rtdb.firebaseio.com",
+          projectId: "my-portfolio-36dec",
+          storageBucket: "my-portfolio-36dec.firebasestorage.app",
+          messagingSenderId: "155935511022",
+          appId: "1:155935511022:web:0c5c911c98c939c4d87eff"
+        };
+
+        let db, auth;
+        const ADMIN_EMAIL = "uyadav6080@gmail.com"; // Updated Admin Email
+
+        // Initialize Firebase safely
+        try {
+            if (typeof firebase !== 'undefined') {
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.database(); 
+                auth = firebase.auth();
+                console.log("Firebase initialized (RTDB Mode)");
+            } else {
+                throw new Error("Firebase SDK not loaded");
+            }
+        } catch (e) {
+            console.warn("⚠️ Warning: Firebase failed to initialize. The app will run in offline mode.", e);
+            auth = {
+                currentUser: null,
+                signInWithEmailAndPassword: () => Promise.reject(new Error("Firebase is offline.")),
+                createUserWithEmailAndPassword: () => Promise.reject(new Error("Firebase is offline.")),
+                signInWithPopup: () => Promise.reject(new Error("Firebase is offline.")),
+                signOut: () => Promise.resolve(),
+                onAuthStateChanged: (cb) => { /* No-op */ }
+            };
+            db = {
+                ref: () => ({
+                    once: () => Promise.reject(new Error("Firebase Offline")),
+                    set: () => Promise.reject(new Error("Firebase Offline"))
+                })
+            };
+        }
+
+        // --- CONSTANTS & CONFIG ---
+        const IMGBB_API_KEY = "c0e58489395a30d269b335dab45f4859";
+        
+        // Default Data (Fallback)
+        const defaultData = {
+            config: {
+                siteName: "ANDROMEADA",
+                logoUrl: "https://i.ibb.co/3W0kHqM/logo-placeholder.png",
+                logoSvg: "", // SVG Code for Navbar
+                footerLogoUrl: "",
+                footerLogoSvg: "", // SVG Code for Footer
+                primaryColor: "#EC1D24",
+                fontFamily: "marvel",
+                hero: {
+                    heading: "LEGENDS NEVER DIE",
+                    subheading: "Explore the multiverse of graphic storytelling. Exclusive editions, rare covers, and the stories that shaped a generation.",
+                    buttonText: "ENTER THE UNIVERSE",
+                    videoUrl: "https://ik.imagekit.io/comixar/BLUE%20MARKS.mov/ik-video.mp4?updatedAt=1764772510539",
+                    imageUrl: "https://images.unsplash.com/photo-1612036782180-6f0b6cd846fe?q=80&w=2000&auto=format&fit=crop"
+                },
+                brands: ["MARVEL", "DC BLACK LABEL", "IMAGE", "DARK HORSE", "SHONEN JUMP", "VERTIGO", "IDW", "BOOM! STUDIOS"],
+                stats: { sold: 15420, pages: 2800000, users: 12500 },
+                socials: [
+                    { id: '1', platform: 'twitter', url: 'https://twitter.com' },
+                    { id: '2', platform: 'instagram', url: 'https://instagram.com' },
+                    { id: '3', platform: 'discord', url: 'https://discord.com' }
+                ]
+            },
+            products: [
+                {
+                    id: '1',
+                    title: 'THE INFINITY SAGA',
+                    category: 'Omnibus',
+                    price: '$120.00',
+                    image: 'https://images.unsplash.com/photo-1608889825103-eb5ed706fc64?q=80&w=800&auto=format&fit=crop',
+                    description: 'The complete collection of the cosmic event that changed everything.',
+                    amazonUrl: 'https://amazon.com',
+                    notionUrl: 'https://notion.so'
+                },
+                {
+                    id: '2',
+                    title: 'GOTHAM NOIR',
+                    category: 'Limited Edition',
+                    price: '$45.00',
+                    image: 'https://images.unsplash.com/photo-1601645191163-3fc0d5d64e35?q=80&w=800&auto=format&fit=crop',
+                    description: 'A black and white detective story set in the heart of darkness.',
+                    amazonUrl: 'https://amazon.com',
+                    notionUrl: 'https://notion.so'
+                },
+                {
+                    id: '3',
+                    title: 'WEB OF SHADOWS',
+                    category: 'Graphic Novel',
+                    price: '$28.00',
+                    image: 'https://images.unsplash.com/photo-1635805737707-575885ab0820?q=80&w=800&auto=format&fit=crop',
+                    description: 'When the city sleeps, the shadows come alive.',
+                    amazonUrl: 'https://amazon.com',
+                    notionUrl: 'https://notion.so'
+                }
+            ]
+        };
+
+        // Initialize State
+        let appData = defaultData;
+        let currentUser = null;
+        let authMode = 'login'; // 'login' or 'register'
+
+        // --- AUTH FUNCTIONS ---
+
+        // Observe Auth State
+        auth.onAuthStateChanged((user) => {
+            currentUser = user;
+            updateNavAuthUI(user);
+        });
+
+        function updateNavAuthUI(user) {
+            const loginBtn = document.getElementById('nav-login-btn');
+            const profile = document.getElementById('nav-user-profile');
+            const mobileLogin = document.getElementById('mobile-login-btn');
+            const dropdown = document.getElementById('user-dropdown');
+            
+            // Dropdown Elements
+            const dropdownName = document.getElementById('dropdown-name');
+            const dropdownEmail = document.getElementById('dropdown-email');
+            const dropdownAvatar = document.getElementById('dropdown-avatar');
+            const adminBtn = document.getElementById('dropdown-admin-btn');
+
+            // Profile Button Elements
+            const userName = document.getElementById('user-name');
+            const userAvatar = document.getElementById('user-avatar');
+
+            if (user) {
+                // LOGGED IN
+                loginBtn.classList.remove('md:flex'); // Ensure flex is removed
+                loginBtn.classList.add('hidden');     // Add hidden class
+                
+                profile.classList.remove('hidden');
+                
+                mobileLogin.textContent = "My Profile";
+                mobileLogin.onclick = () => { toggleMobileMenu(); /* Open profile later */ };
+
+                // Get User Data
+                const displayName = user.displayName || "User";
+                const photoURL = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=000&color=fff&bold=true`;
+                const email = user.email;
+
+                // Update Profile Button
+                userName.textContent = displayName;
+                userAvatar.src = photoURL;
+
+                // Update Dropdown Content
+                dropdownName.textContent = displayName;
+                dropdownEmail.textContent = email;
+                dropdownAvatar.src = photoURL;
+
+                // Check Admin Access
+                if (email === ADMIN_EMAIL) {
+                    adminBtn.classList.remove('hidden');
+                } else {
+                    adminBtn.classList.add('hidden');
+                }
+            } else {
+                // LOGGED OUT
+                loginBtn.classList.add('md:flex');   // Restore flex
+                loginBtn.classList.remove('hidden'); // Remove hidden
+                
+                profile.classList.add('hidden');
+                dropdown.classList.add('hidden'); // Ensure dropdown is closed
+                
+                mobileLogin.textContent = "Login / Signup";
+                mobileLogin.onclick = () => { openAuthModal(); toggleMobileMenu(); };
+            }
+        }
+
+        // Toggle User Dropdown
+        function toggleUserDropdown() {
+            const dropdown = document.getElementById('user-dropdown');
+            dropdown.classList.toggle('hidden');
+        }
+
+        // Close dropdown if clicking outside
+        function closeDropdownIfOutside(e) {
+            const dropdown = document.getElementById('user-dropdown');
+            const profileBtn = document.getElementById('nav-user-profile');
+            if (!dropdown.classList.contains('hidden')) {
+                // If we clicked outside both the dropdown and the button
+                if (!dropdown.contains(e.target) && !profileBtn.contains(e.target)) {
+                    dropdown.classList.add('hidden');
+                }
+            }
+        }
+
+        function openAuthModal() {
+            authMode = 'login'; // Default to login
+            updateAuthModalUI();
+            document.getElementById('auth-modal').classList.remove('hidden');
+            document.getElementById('auth-error').classList.add('hidden');
+        }
+
+        function closeAuthModal() {
+            document.getElementById('auth-modal').classList.add('hidden');
+        }
+
+        function toggleAuthMode() {
+            authMode = authMode === 'login' ? 'register' : 'login';
+            updateAuthModalUI();
+            document.getElementById('auth-error').classList.add('hidden');
+        }
+
+        function updateAuthModalUI() {
+            const title = document.getElementById('auth-modal-title');
+            const btn = document.getElementById('auth-submit-btn');
+            const toggle = document.getElementById('auth-mode-toggle');
+            const nameInput = document.getElementById('auth-name');
+
+            if (authMode === 'login') {
+                title.textContent = "Member Access";
+                btn.textContent = "Sign In";
+                toggle.innerHTML = 'New here? <span class="underline">Create an Account</span>';
+                
+                nameInput.classList.add('hidden');
+                nameInput.required = false;
+            } else {
+                title.textContent = "Join the Universe";
+                btn.textContent = "Create Account";
+                toggle.innerHTML = 'Already a member? <span class="underline">Sign In</span>';
+                
+                nameInput.classList.remove('hidden');
+                nameInput.required = true;
+            }
+        }
+
+        async function handleGoogleLogin() {
+            try {
+                const provider = new firebase.auth.GoogleAuthProvider();
+                const result = await auth.signInWithPopup(provider);
+                const user = result.user;
+                
+                closeAuthModal();
+                
+                // Auto-Open Admin if applicable
+                if (user.email === ADMIN_EMAIL) {
+                    setTimeout(() => openAdmin(), 500); // Small delay for smooth UI transition
+                }
+            } catch (error) {
+                console.error("Google Auth Error", error);
+                alert("Google Sign In Failed: " + error.message);
+            }
+        }
+
+        async function handleEmailAuth(e) {
+            e.preventDefault();
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+            const err = document.getElementById('auth-error');
+            const btn = document.getElementById('auth-submit-btn');
+
+            btn.textContent = "Processing...";
+            btn.disabled = true;
+            err.classList.add('hidden');
+
+            try {
+                if (authMode === 'login') {
+                    // Sign In
+                    await auth.signInWithEmailAndPassword(email, password);
+                    closeAuthModal();
+                    
+                    // Auto-Open Admin if applicable
+                    if (email === ADMIN_EMAIL) {
+                         setTimeout(() => openAdmin(), 500);
+                    }
+                } else {
+                    // Create Account
+                    const name = document.getElementById('auth-name').value;
+                    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                    
+                    // If name provided, update profile
+                    if (name) {
+                        await userCredential.user.updateProfile({
+                            displayName: name
+                        });
+                        // Manually trigger UI update after profile change since onAuthStateChanged might fire before name update
+                        updateNavAuthUI(auth.currentUser);
+                    }
+                    
+                    // Close Modal (No Reload)
+                    closeAuthModal();
+                    // Scroll to hero as confirmation
+                    scrollToSection('hero');
+                }
+            } catch (error) {
+                err.textContent = error.message;
+                err.classList.remove('hidden');
+            } finally {
+                btn.textContent = authMode === 'login' ? "Sign In" : "Create Account";
+                btn.disabled = false;
+            }
+        }
+
+        function logoutUser() {
+            auth.signOut().then(() => {
+                // Scroll to top instead of reloading
+                scrollToSection('hero');
+            });
+        }
+
+        // --- GLOBAL FUNCTIONS ---
+
+        // Load data from RTDB
+        async function loadData() {
+            try {
+                // Attempt to load from Realtime Database
+                const snapshot = await db.ref('siteContent/main').once('value');
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    // Merge defaults to ensure new fields like footerLogoUrl exist
+                    appData = { ...defaultData, ...data, config: { ...defaultData.config, ...data.config } };
+                    console.log("Data loaded from Realtime Database");
+                } else {
+                    console.log("No data in RTDB (New Database). Using Defaults.");
+                }
+            } catch (error) {
+                console.warn("⚠️ Data Load Issue (Using Defaults):", error.message);
+                
+                const alertBox = document.getElementById('system-alert');
+                const alertMsg = document.getElementById('system-alert-msg');
+                const alertLink = document.getElementById('system-alert-link');
+                
+                if (error.code === 'PERMISSION_DENIED') {
+                     alertMsg.textContent = "⚠ SYSTEM ERROR: PERMISSION DENIED (CHECK RULES)";
+                     alertLink.textContent = "FIX RULES";
+                     alertLink.href = `https://console.firebase.google.com/project/${firebaseConfig.projectId}/database/rules`;
+                     alertBox.classList.remove('hidden');
+                }
+            } finally {
+                const loader = document.getElementById('global-loader');
+                if(loader) {
+                    loader.style.opacity = '0';
+                    setTimeout(() => loader.remove(), 500);
+                }
+                renderAll();
+            }
+        }
+
+        async function saveData() {
+            const btn = document.getElementById('save-text');
+            const originalText = btn.textContent;
+            btn.textContent = "Saving to Database...";
+            
+            try {
+                const user = auth.currentUser;
+                if (!user) {
+                    throw new Error("You must be logged in to save.");
+                }
+
+                // Save to Realtime Database
+                await db.ref('siteContent/main').set(appData);
+                
+                btn.textContent = "Saved Successfully!";
+                document.getElementById('system-alert').classList.add('hidden');
+                setTimeout(() => {
+                     btn.textContent = originalText;
+                     closeAdmin();
+                }, 1000);
+                renderAll(); 
+            } catch (error) {
+                console.error("Save error:", error);
+                if (error.code === 'PERMISSION_DENIED') {
+                     alert("ERROR: Permission Denied.\n\n1. Go to Firebase Console > Realtime Database > Rules.\n2. Paste the JSON rule provided.\n3. Ensure you are logged in.");
+                } else {
+                     alert("Error saving: " + error.message);
+                }
+                btn.textContent = originalText;
+            }
+        }
+
+        function scrollToSection(id) {
+            document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            const menuIcon = document.getElementById('menu-icon');
+            const closeIcon = document.getElementById('close-icon');
+            
+            if (menu.classList.contains('opacity-0')) {
+                menu.classList.remove('opacity-0', 'pointer-events-none');
+                menu.classList.add('opacity-100', 'pointer-events-auto');
+                menuIcon.classList.add('hidden');
+                closeIcon.classList.remove('hidden');
+            } else {
+                menu.classList.add('opacity-0', 'pointer-events-none');
+                menu.classList.remove('opacity-100', 'pointer-events-auto');
+                menuIcon.classList.remove('hidden');
+                closeIcon.classList.add('hidden');
+            }
+        }
+
+        // --- RENDER FUNCTIONS ---
+
+        function renderAll() {
+            const { config, products } = appData;
+
+            // 1. Styling
+            document.documentElement.style.setProperty('--primary-color', config.primaryColor);
+            
+            // Fonts classes update
+            const headingFont = config.fontFamily === 'marvel' ? 'font-marvel' : 'font-sans';
+            const headingSize = config.fontFamily === 'marvel' ? 'text-8xl md:text-[10rem]' : 'text-6xl md:text-8xl';
+
+            // 2. Navigation
+            const navLogo = document.getElementById('nav-logo');
+            const navText = document.getElementById('nav-logo-text');
+            const navSvg = document.getElementById('nav-logo-svg');
+            
+            if (config.logoSvg && config.logoSvg.trim() !== "") {
+                navSvg.innerHTML = config.logoSvg;
+                navSvg.classList.remove('hidden');
+                navLogo.classList.add('hidden');
+                navText.classList.add('hidden');
+            } else if (config.logoUrl && config.logoUrl.trim() !== "") {
+                navLogo.src = config.logoUrl;
+                navLogo.classList.remove('hidden');
+                navSvg.classList.add('hidden');
+                navText.classList.add('hidden');
+            } else {
+                navText.textContent = config.siteName;
+                navText.classList.remove('hidden');
+                navLogo.classList.add('hidden');
+                navSvg.classList.add('hidden');
+            }
+
+            // 3. Hero
+            document.getElementById('est-badge').style.borderColor = config.primaryColor;
+            
+            const heroHeading = document.getElementById('hero-heading');
+            heroHeading.textContent = config.hero.heading;
+            heroHeading.className = `font-bold tracking-tighter text-white leading-[0.9] drop-shadow-2xl uppercase ${headingSize} ${headingFont}`;
+            
+            document.getElementById('hero-subheading').textContent = config.hero.subheading;
+            
+            const heroBtn = document.getElementById('hero-cta');
+            heroBtn.querySelector('span').textContent = config.hero.buttonText;
+            heroBtn.style.backgroundColor = config.primaryColor;
+
+            // UPDATE: Handle Video Background
+            const heroVideo = document.getElementById('hero-video');
+            const heroSource = document.getElementById('hero-video-source');
+            const videoUrl = config.hero.videoUrl || "https://ik.imagekit.io/comixar/BLUE%20MARKS.mov/ik-video.mp4?updatedAt=1764772510539";
+            
+            if (heroSource.src !== videoUrl) {
+                heroSource.src = videoUrl;
+                heroVideo.load();
+            }
+
+            // 4. Brands
+            const brandContainer = document.getElementById('brand-ticker');
+            brandContainer.innerHTML = '';
+            // duplicate for loop
+            [...config.brands, ...config.brands].forEach(brand => {
+                const div = document.createElement('div');
+                div.className = "whitespace-nowrap flex items-center mx-12";
+                div.innerHTML = `
+                    <span class="font-marvel text-2xl tracking-[0.1em] text-white hover:text-gray-300 transition-colors cursor-default uppercase">${brand}</span>
+                    <span class="ml-12 opacity-50 text-red-500 text-xl">★</span>
+                `;
+                brandContainer.appendChild(div);
+            });
+
+            // 5. Stats
+            updateStat('stat-sold', config.stats.sold, '', config.primaryColor);
+            updateStat('stat-pages', config.stats.pages, '+', config.primaryColor);
+            updateStat('stat-users', config.stats.users, '', config.primaryColor);
+            
+            document.querySelectorAll('.stat-label').forEach(el => el.style.color = config.primaryColor);
+
+            // 6. Products
+            const productGrid = document.getElementById('products-grid');
+            productGrid.innerHTML = '';
+            // Handle missing products array gracefully
+            const productList = Array.isArray(products) ? products : [];
+            productList.forEach((product, idx) => {
+                const el = document.createElement('div');
+                el.className = "group cursor-pointer";
+                el.onclick = () => openProductModal(idx);
+                el.innerHTML = `
+                  <div class="aspect-[2/3] overflow-hidden bg-gray-100 mb-6 relative shadow-lg">
+                    <img src="${product.image}" alt="${product.title}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                    <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300"></div>
+                    <div class="absolute bottom-0 right-0 px-4 py-2 text-white font-bold text-lg translate-y-full group-hover:translate-y-0 transition-transform duration-300" style="background-color: ${config.primaryColor}">
+                        ${product.price}
+                    </div>
+                  </div>
+                  <div class="space-y-1">
+                    <div class="text-xs font-bold text-gray-400 tracking-widest uppercase">${product.category}</div>
+                    <h3 class="text-3xl font-marvel font-bold tracking-wide uppercase group-hover:text-gray-700 transition-colors">${product.title}</h3>
+                    <p class="text-sm text-gray-500 line-clamp-2 font-medium">${product.description}</p>
+                  </div>
+                `;
+                productGrid.appendChild(el);
+            });
+            
+            // Current Issues "s" coloring
+            document.querySelector('.text-primary-color').style.color = config.primaryColor;
+
+            // 7. Subscribe Button
+            document.getElementById('subscribe-btn').style.backgroundColor = config.primaryColor;
+
+            // 8. Footer
+            const footerLogo = document.getElementById('footer-logo');
+            const footerText = document.getElementById('footer-logo-text');
+            const footerSvg = document.getElementById('footer-logo-svg');
+            
+            if (config.footerLogoSvg && config.footerLogoSvg.trim() !== "") {
+                footerSvg.innerHTML = config.footerLogoSvg;
+                footerSvg.classList.remove('hidden');
+                footerLogo.classList.add('hidden');
+                footerText.classList.add('hidden');
+            } else if (config.footerLogoUrl && config.footerLogoUrl.trim() !== "") {
+                // Use Specific Footer Logo
+                footerLogo.src = config.footerLogoUrl;
+                footerLogo.classList.remove('hidden');
+                footerSvg.classList.add('hidden');
+                footerText.classList.add('hidden');
+            } else if (config.logoUrl && config.logoUrl.trim() !== "") {
+                 // Fallback to Main Logo
+                footerLogo.src = config.logoUrl;
+                footerLogo.classList.remove('hidden');
+                footerSvg.classList.add('hidden');
+                footerText.classList.add('hidden');
+            } else {
+                // Fallback to text
+                footerText.textContent = config.siteName + ".";
+                footerText.classList.remove('hidden');
+                footerLogo.classList.add('hidden');
+                footerSvg.classList.add('hidden');
+            }
+
+            const socialContainer = document.getElementById('social-links-container');
+            socialContainer.innerHTML = '';
+            const socialList = Array.isArray(config.socials) ? config.socials : [];
+            socialList.forEach(social => {
+                const a = document.createElement('a');
+                a.href = social.url;
+                a.target = "_blank";
+                a.rel = "noopener noreferrer";
+                a.className = "w-10 h-10 border border-white/20 flex items-center justify-center hover:bg-white hover:text-black transition-all cursor-pointer rounded-full";
+                
+                // Get Icon
+                let iconName = 'globe';
+                if(social.platform === 'twitter') iconName = 'twitter';
+                if(social.platform === 'instagram') iconName = 'instagram';
+                if(social.platform === 'facebook') iconName = 'facebook';
+                if(social.platform === 'youtube') iconName = 'youtube';
+                if(social.platform === 'discord') iconName = 'gamepad-2';
+
+                const i = document.createElement('i');
+                i.setAttribute('data-lucide', iconName);
+                i.style.width = '16px';
+                i.style.height = '16px';
+                a.appendChild(i);
+                socialContainer.appendChild(a);
+            });
+            
+            document.getElementById('copyright-text').textContent = `© 2024 ${config.siteName} INC.`;
+
+            // Refresh Icons
+            lucide.createIcons();
+        }
+
+        // --- STATS ANIMATION ---
+        function updateStat(id, val, suffix, color) {
+            const el = document.getElementById(id);
+            el.setAttribute('data-target', val);
+            el.setAttribute('data-suffix', suffix);
+            el.textContent = '0' + suffix;
+        }
+        
+        const statsObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if(entry.isIntersecting) {
+                    const el = entry.target;
+                    const target = parseInt(el.getAttribute('data-target'));
+                    const suffix = el.getAttribute('data-suffix');
+                    animateValue(el, 0, target, 2000, suffix);
+                    statsObserver.unobserve(el);
+                }
+            });
+        }, { threshold: 0.5 });
+
+        function animateValue(obj, start, end, duration, suffix) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                const ease = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+                obj.innerHTML = Math.floor(ease * (end - start) + start).toLocaleString() + suffix;
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+
+
+        // --- PRODUCT MODAL ---
+        function openProductModal(index) {
+            const product = appData.products[index];
+            if (!product) return;
+
+            document.getElementById('modal-image').src = product.image;
+            document.getElementById('modal-price').textContent = product.price;
+            document.getElementById('modal-price').style.backgroundColor = appData.config.primaryColor;
+            document.getElementById('modal-category').textContent = product.category;
+            document.getElementById('modal-title').textContent = product.title;
+            
+            // Dynamic fonts for modal
+            const headingFont = appData.config.fontFamily === 'marvel' ? 'font-marvel' : 'font-sans';
+            document.getElementById('modal-title').className = `text-5xl md:text-6xl uppercase leading-[0.9] mb-6 text-black ${headingFont}`;
+            
+            document.getElementById('modal-desc').textContent = product.description;
+
+            const authActions = document.getElementById('modal-actions-authenticated');
+            const guestActions = document.getElementById('modal-actions-guest');
+            
+            if (currentUser) {
+                // User is logged in, show Buy links
+                guestActions.classList.add('hidden');
+                authActions.classList.remove('hidden');
+
+                const amazonBtn = document.getElementById('modal-amazon');
+                const notionBtn = document.getElementById('modal-notion');
+                const unavail = document.getElementById('modal-unavailable');
+
+                amazonBtn.classList.add('hidden');
+                notionBtn.classList.add('hidden');
+                unavail.classList.add('hidden');
+
+                if (product.amazonUrl) {
+                    amazonBtn.classList.remove('hidden');
+                    amazonBtn.href = product.amazonUrl;
+                }
+                if (product.notionUrl) {
+                    notionBtn.classList.remove('hidden');
+                    notionBtn.href = product.notionUrl;
+                }
+                if (!product.amazonUrl && !product.notionUrl) {
+                    unavail.classList.remove('hidden');
+                }
+            } else {
+                // Guest mode
+                authActions.classList.add('hidden');
+                guestActions.classList.remove('hidden');
+            }
+
+            document.getElementById('product-modal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeProductModal() {
+            document.getElementById('product-modal').classList.add('hidden');
+        }
+
+        // --- ADMIN PANEL LOGIC ---
+
+        function openAdmin() {
+            document.getElementById('admin-modal').classList.remove('hidden');
+            const user = auth.currentUser;
+            
+            // If already logged in AND is admin, skip login screen
+            if (user && user.email === ADMIN_EMAIL) {
+                 document.getElementById('admin-login-view').classList.add('hidden');
+                 document.getElementById('admin-dashboard-view').classList.remove('hidden');
+                 switchAdminTab('general');
+            } else {
+                 document.getElementById('admin-login-view').classList.remove('hidden');
+                 document.getElementById('admin-dashboard-view').classList.add('hidden');
+                 // Only pre-fill if the user might be the admin
+                 if(user && user.email === ADMIN_EMAIL) {
+                     document.getElementById('admin-email').value = user.email;
+                 } else {
+                     document.getElementById('admin-email').value = '';
+                 }
+            }
+        }
+
+        function closeAdmin() {
+            document.getElementById('admin-modal').classList.add('hidden');
+        }
+
+        function saveAndCloseAdmin() {
+            saveData();
+        }
+        
+        function logoutAdmin() {
+            // Only close admin panel, do not logout user globally
+             document.getElementById('admin-modal').classList.add('hidden');
+        }
+
+        async function checkAdminLogin() {
+            const email = document.getElementById('admin-email').value.trim();
+            const pass = document.getElementById('admin-passkey').value;
+            const btn = document.getElementById('login-btn');
+            const err = document.getElementById('login-error');
+            
+            btn.textContent = "Verifying...";
+            btn.disabled = true;
+            err.classList.add('hidden');
+            
+            try {
+                // 1. STRICT CHECK: Is this the authorized admin email?
+                if (email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+                    throw new Error("Access Denied: You are not authorized to access this panel.");
+                }
+
+                // 2. Perform Login (or use existing session)
+                if (auth.currentUser && auth.currentUser.email.toLowerCase() === email.toLowerCase()) {
+                     // Already authenticated via main auth as the correct user
+                } else {
+                    await auth.signInWithEmailAndPassword(email, pass);
+                }
+                
+                // 3. Post-Login Verification (Double Check)
+                if (auth.currentUser.email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+                     await auth.signOut(); // Logout unauthorized user immediately
+                     throw new Error("Access Denied: Not an admin account.");
+                }
+                
+                document.getElementById('admin-login-view').classList.add('hidden');
+                document.getElementById('admin-dashboard-view').classList.remove('hidden');
+                switchAdminTab('general');
+                document.getElementById('admin-passkey').value = '';
+            } catch (error) {
+                console.error("Login failed", error);
+                
+                if(error.code === 'auth/network-request-failed') {
+                    alert("NETWORK ERROR: Could not reach Firebase Authentication. Check your internet.");
+                } else if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-email' || error.code === 'auth/invalid-credential') {
+                    err.textContent = "Invalid Credentials.";
+                    err.classList.remove('hidden');
+                } else {
+                    err.textContent = error.message; // Show our custom Access Denied message
+                    err.classList.remove('hidden');
+                }
+            } finally {
+                btn.textContent = "Unlock System";
+                btn.disabled = false;
+            }
+        }
+
+        // Initialize Admin Content
+        let currentAdminTab = 'general';
+
+        function switchAdminTab(tab) {
+            currentAdminTab = tab;
+            // Update buttons
+            document.querySelectorAll('.admin-tab-btn').forEach(btn => {
+                if (btn.getAttribute('data-tab') === tab) {
+                    btn.className = "admin-tab-btn px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-all bg-black text-white shadow-lg";
+                } else {
+                    btn.className = "admin-tab-btn px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-all bg-gray-100 text-gray-500 hover:bg-gray-200";
+                }
+            });
+            renderAdminContent();
+        }
+
+        async function handleImageUpload(file, callback, loadingElement) {
+            if(!file) return;
+
+            const originalText = loadingElement ? loadingElement.textContent : "Upload";
+            if(loadingElement) loadingElement.textContent = "Uploading...";
+            
+            const formData = new FormData();
+            formData.append('image', file);
+
+            try {
+                const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+                    method: 'POST',
+                    body: formData,
+                });
+                const data = await response.json();
+                if (data.success) {
+                    callback(data.data.url);
+                    if(loadingElement) loadingElement.textContent = "Done!";
+                } else {
+                    alert('Upload failed: ' + (data.error ? data.error.message : 'Unknown error'));
+                    if(loadingElement) loadingElement.textContent = "Failed";
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Upload error');
+                if(loadingElement) loadingElement.textContent = "Error";
+            } finally {
+                setTimeout(() => {
+                    if(loadingElement) loadingElement.textContent = originalText;
+                }, 2000);
+            }
+        }
+
+        function handleSvgUpload(file, callback) {
+            if (!file) return;
+            if (file.type !== 'image/svg+xml') {
+                alert("Please select a valid SVG file.");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const svgContent = e.target.result;
+                callback(svgContent);
+            };
+            reader.readAsText(file);
+        }
+
+        function renderAdminContent() {
+            const container = document.getElementById('admin-content-area');
+            const { config } = appData;
+            container.innerHTML = '';
+
+            if (currentAdminTab === 'general') {
+                container.innerHTML = `
+                    <div class="space-y-6 animate-fade-up">
+                        <div class="space-y-2">
+                            <label class="text-xs font-black uppercase text-gray-500">Website Logo (SVG preferred)</label>
+                            <div class="flex flex-col gap-2 p-3 bg-gray-50 rounded border border-gray-200">
+                                <label class="cursor-pointer bg-black text-white px-3 py-2 rounded text-xs font-bold uppercase hover:bg-gray-800 inline-flex items-center gap-2 justify-center">
+                                    <i data-lucide="code" class="w-3 h-3"></i>
+                                    <span>Upload SVG File</span>
+                                    <input type="file" class="hidden" accept=".svg" onchange="handleSvgUpload(this.files[0], (code) => { updateConfig('logoSvg', code); alert('SVG Uploaded!'); })">
+                                </label>
+                                <div class="text-[10px] text-gray-400 text-center uppercase">OR Use Image URL</div>
+                                <div class="flex items-center gap-2">
+                                    <input type="text" class="admin-input" value="${config.logoUrl || ''}" onchange="updateConfig('logoUrl', this.value)" placeholder="Fallback Image URL">
+                                    <label class="cursor-pointer bg-gray-200 text-black px-2 py-2 rounded hover:bg-gray-300">
+                                        <i data-lucide="upload" class="w-4 h-4"></i>
+                                        <input type="file" class="hidden" accept="image/*" onchange="handleImageUpload(this.files[0], (url) => { updateConfig('logoUrl', url); }, this.parentElement)">
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="text-xs font-black uppercase text-gray-500">Footer Logo (SVG preferred)</label>
+                            <div class="flex flex-col gap-2 p-3 bg-gray-50 rounded border border-gray-200">
+                                <label class="cursor-pointer bg-black text-white px-3 py-2 rounded text-xs font-bold uppercase hover:bg-gray-800 inline-flex items-center gap-2 justify-center">
+                                    <i data-lucide="code" class="w-3 h-3"></i>
+                                    <span>Upload Footer SVG</span>
+                                    <input type="file" class="hidden" accept=".svg" onchange="handleSvgUpload(this.files[0], (code) => { updateConfig('footerLogoSvg', code); alert('Footer SVG Uploaded!'); })">
+                                </label>
+                                <div class="text-[10px] text-gray-400 text-center uppercase">OR Use Image URL</div>
+                                <div class="flex items-center gap-2">
+                                    <input type="text" class="admin-input" value="${config.footerLogoUrl || ''}" onchange="updateConfig('footerLogoUrl', this.value)" placeholder="Fallback Image URL">
+                                     <label class="cursor-pointer bg-gray-200 text-black px-2 py-2 rounded hover:bg-gray-300">
+                                        <i data-lucide="upload" class="w-4 h-4"></i>
+                                        <input type="file" class="hidden" accept="image/*" onchange="handleImageUpload(this.files[0], (url) => { updateConfig('footerLogoUrl', url); }, this.parentElement)">
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="text-xs font-black uppercase text-gray-500">Site Name</label>
+                            <input type="text" class="admin-input" value="${config.siteName}" onchange="updateConfig('siteName', this.value)">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-xs font-black uppercase text-gray-500">Primary Color</label>
+                            <div class="flex gap-3">
+                                <input type="color" value="${config.primaryColor}" onchange="updateConfig('primaryColor', this.value)" class="h-10 w-10">
+                                <input type="text" class="admin-input" value="${config.primaryColor}" onchange="updateConfig('primaryColor', this.value)">
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-xs font-black uppercase text-gray-500">Font Family</label>
+                            <select class="admin-input" onchange="updateConfig('fontFamily', this.value)">
+                                <option value="marvel" ${config.fontFamily === 'marvel' ? 'selected' : ''}>Marvel (Bebas Neue)</option>
+                                <option value="sans" ${config.fontFamily === 'sans' ? 'selected' : ''}>Modern (Montserrat)</option>
+                            </select>
+                        </div>
+                         <div class="space-y-2">
+                            <label class="text-xs font-black uppercase text-gray-500">Brands (comma separated)</label>
+                            <textarea class="admin-input h-32" onchange="updateBrands(this.value)">${config.brands.join(', ')}</textarea>
+                        </div>
+                    </div>
+                `;
+                lucide.createIcons();
+            } else if (currentAdminTab === 'hero') {
+                container.innerHTML = `
+                    <div class="space-y-6 animate-fade-up">
+                         <div class="space-y-2">
+                            <label class="text-xs font-black uppercase text-gray-500">Headline</label>
+                            <input type="text" class="admin-input" value="${config.hero.heading}" onchange="updateNestedConfig('hero', 'heading', this.value)">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-xs font-black uppercase text-gray-500">Subheading</label>
+                            <textarea class="admin-input h-32" onchange="updateNestedConfig('hero', 'subheading', this.value)">${config.hero.subheading}</textarea>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-xs font-black uppercase text-gray-500">Button Text</label>
+                            <input type="text" class="admin-input" value="${config.hero.buttonText}" onchange="updateNestedConfig('hero', 'buttonText', this.value)">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-xs font-black uppercase text-gray-500">Hero Video URL</label>
+                            <div class="flex flex-col gap-2">
+                                <input type="text" class="admin-input text-xs" value="${config.hero.videoUrl || ''}" onchange="updateNestedConfig('hero', 'videoUrl', this.value)">
+                                <p class="text-[10px] text-gray-400">Direct link to .mp4 or .webm video (e.g. ImageKit, Cloudinary)</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (currentAdminTab === 'stats') {
+                container.innerHTML = `
+                    <div class="space-y-6 animate-fade-up">
+                         <div class="space-y-2">
+                            <label class="text-xs font-black uppercase text-gray-500">Sold</label>
+                            <input type="number" class="admin-input" value="${config.stats.sold}" onchange="updateNestedConfig('stats', 'sold', parseInt(this.value))">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-xs font-black uppercase text-gray-500">Pages</label>
+                            <input type="number" class="admin-input" value="${config.stats.pages}" onchange="updateNestedConfig('stats', 'pages', parseInt(this.value))">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-xs font-black uppercase text-gray-500">Users</label>
+                            <input type="number" class="admin-input" value="${config.stats.users}" onchange="updateNestedConfig('stats', 'users', parseInt(this.value))">
+                        </div>
+                    </div>
+                `;
+            } else if (currentAdminTab === 'socials') {
+                let html = '<div class="space-y-6 animate-fade-up">';
+                config.socials.forEach((social, idx) => {
+                    html += `
+                        <div class="flex gap-2 items-start bg-gray-50 p-3 rounded">
+                             <div class="flex-1 space-y-2">
+                                <div class="flex gap-2">
+                                     <select class="admin-input w-1/3 text-xs uppercase font-bold" onchange="updateSocial(${idx}, 'platform', this.value)">
+                                        <option value="twitter" ${social.platform === 'twitter' ? 'selected' : ''}>Twitter</option>
+                                        <option value="instagram" ${social.platform === 'instagram' ? 'selected' : ''}>Instagram</option>
+                                        <option value="facebook" ${social.platform === 'facebook' ? 'selected' : ''}>Facebook</option>
+                                        <option value="youtube" ${social.platform === 'youtube' ? 'selected' : ''}>YouTube</option>
+                                        <option value="discord" ${social.platform === 'discord' ? 'selected' : ''}>Discord</option>
+                                        <option value="other" ${social.platform === 'other' ? 'selected' : ''}>Other</option>
+                                     </select>
+                                     <input type="text" class="admin-input flex-1" value="${social.url}" onchange="updateSocial(${idx}, 'url', this.value)">
+                                </div>
+                             </div>
+                             <button onclick="deleteSocial(${idx})" class="p-2 text-red-500 hover:text-red-700"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        </div>
+                    `;
+                });
+                html += `
+                    <button onclick="addSocial()" class="w-full py-3 border border-dashed border-gray-300 rounded-lg text-xs font-bold uppercase text-gray-500 hover:text-black transition-colors flex items-center justify-center gap-2">
+                        + Add Social Link
+                    </button>
+                </div>`;
+                container.innerHTML = html;
+                lucide.createIcons();
+            } else if (currentAdminTab === 'products') {
+                 let html = '<div class="space-y-8 animate-fade-up">';
+                 appData.products.forEach((product, idx) => {
+                     html += `
+                        <div class="border-2 border-gray-100 p-5 rounded-xl bg-white relative hover:border-black/10 transition-colors">
+                           <button onclick="deleteProduct(${idx})" class="absolute top-4 right-4 text-gray-300 hover:text-red-500 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                           
+                           <div class="flex gap-4 mb-4">
+                               <img src="${product.image}" class="w-16 h-24 object-cover rounded bg-gray-100" />
+                               <div class="flex-1">
+                                   <div class="text-xs font-bold text-gray-900 uppercase">Product #${idx+1}</div>
+                                   <input type="text" class="admin-input mt-1 text-xs" value="${product.image}" onchange="updateProduct(${idx}, 'image', this.value)" placeholder="Image URL">
+                                   <label class="cursor-pointer bg-gray-100 text-gray-600 px-3 py-1.5 rounded text-[10px] font-bold uppercase hover:bg-black hover:text-white transition-colors inline-flex items-center gap-1 mt-2">
+                                        <i data-lucide="upload" class="w-3 h-3"></i>
+                                        <span>Upload New</span>
+                                        <input type="file" class="hidden" accept="image/*" onchange="handleImageUpload(this.files[0], (url) => { updateProduct(${idx}, 'image', url); renderAdminContent(); }, this.previousElementSibling)">
+                                   </label>
+                               </div>
+                           </div>
+                           
+                           <div class="grid grid-cols-2 gap-4">
+                                <input type="text" class="admin-input" value="${product.title}" onchange="updateProduct(${idx}, 'title', this.value)" placeholder="Title">
+                                <input type="text" class="admin-input" value="${product.category}" onchange="updateProduct(${idx}, 'category', this.value)" placeholder="Category">
+                                <input type="text" class="admin-input" value="${product.price}" onchange="updateProduct(${idx}, 'price', this.value)" placeholder="Price">
+                           </div>
+                           <input type="text" class="admin-input mt-2" value="${product.description}" onchange="updateProduct(${idx}, 'description', this.value)" placeholder="Description">
+                           
+                           <div class="mt-4 pt-4 border-t border-gray-100">
+                                <label class="text-[10px] font-bold uppercase text-gray-400">Links</label>
+                                <input type="text" class="admin-input mt-1" value="${product.amazonUrl || ''}" onchange="updateProduct(${idx}, 'amazonUrl', this.value)" placeholder="Amazon URL">
+                                <input type="text" class="admin-input mt-1" value="${product.notionUrl || ''}" onchange="updateProduct(${idx}, 'notionUrl', this.value)" placeholder="Notion URL">
+                           </div>
+                        </div>
+                     `;
+                 });
+                 html += `
+                    <button onclick="addProduct()" class="w-full py-4 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 font-bold hover:border-black hover:text-black hover:bg-gray-50 transition-all flex items-center justify-center gap-2">
+                        + Add New Product
+                    </button>
+                 </div>`;
+                 container.innerHTML = html;
+                 lucide.createIcons();
+            }
+        }
+
+        // --- UPDATE HELPERS ---
+        function updateConfig(key, value) {
+            appData.config[key] = value;
+            renderAdminContent();
+        }
+        function updateNestedConfig(parent, key, value) {
+            appData.config[parent][key] = value;
+            renderAdminContent();
+        }
+        function updateBrands(text) {
+            appData.config.brands = text.split(',').map(s => s.trim());
+        }
+        function updateSocial(index, key, value) {
+            appData.config.socials[index][key] = value;
+        }
+        function deleteSocial(index) {
+            appData.config.socials.splice(index, 1);
+            renderAdminContent();
+        }
+        function addSocial() {
+            appData.config.socials.push({ id: Date.now().toString(), platform: 'other', url: '' });
+            renderAdminContent();
+        }
+        function updateProduct(index, key, value) {
+            appData.products[index][key] = value;
+        }
+        function deleteProduct(index) {
+            if(confirm('Are you sure?')) {
+                appData.products.splice(index, 1);
+                renderAdminContent();
+            }
+        }
+        function addProduct() {
+            appData.products.push({
+                id: Date.now().toString(),
+                title: 'New Product',
+                category: 'Category',
+                price: '$0.00',
+                image: 'https://via.placeholder.com/400',
+                description: 'Description',
+                amazonUrl: '',
+                notionUrl: ''
+            });
+            renderAdminContent();
+        }
+
+        // --- INIT ---
+        window.addEventListener('DOMContentLoaded', () => {
+            loadData();
+            
+            // Setup Parallax
+            window.addEventListener('scroll', () => {
+                const scrolled = window.scrollY;
+                // Updated Parallax to target Video
+                const heroVideo = document.getElementById('hero-video');
+                if(heroVideo) heroVideo.style.transform = `translateY(${scrolled * 0.5}px) scale(${1 + scrolled * 0.0005})`;
+                
+                // GLASS MORPHISM SCROLL EFFECT
+                const nav = document.getElementById('navbar');
+                if (scrolled > 20) {
+                    nav.classList.add('bg-white/10', 'backdrop-blur-md', 'border-b', 'border-white/10', 'shadow-sm');
+                    nav.classList.remove('bg-transparent');
+                } else {
+                    nav.classList.remove('bg-white/10', 'backdrop-blur-md', 'border-b', 'border-white/10', 'shadow-sm');
+                    nav.classList.add('bg-transparent');
+                }
+            });
+
+            // Start Observing Stats
+            document.querySelectorAll('.count-up').forEach(el => statsObserver.observe(el));
+        });
+    </script>
+</body>
+</html>
